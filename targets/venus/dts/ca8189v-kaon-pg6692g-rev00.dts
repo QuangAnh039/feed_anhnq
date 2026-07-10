@@ -1,0 +1,271 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * dts file for the Kaon PG6692G rev00 board
+ *
+ * Copyright (C) 2023 KAON Media Co Ltd
+ *
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+
+#include "ca8289-kaon-common.dtsi"
+#include <ca8289/ca8289-led.dtsi>
+#include <ca8289-eng-voip.dts>
+
+/ {
+	model = "Kaon PG6692G rev00";
+	compatible = "kaon,pg6692g-rev00", "cortina-access,ca8189v", "cortina-access,venus";
+
+	reserved-memory {
+		qcn9200_reserved_0: qcn9200_reserved_0@10000000 {
+			no-map;
+			reg = <0x0 0x10000000 0x0 0x03100000>; /* 49MB reserved */
+		};
+
+		qca_pe_share_memory: qca_pe_share_memory {
+			no-map;
+			reg = <0x0 0x16000000 0x0 0x00C00000>;
+		};
+
+		ni_ddr_reserved: pe_ddr_buffer@19000000 {
+			reg = <0x0 0x19000000 0x0 0x03000000>;  /* 48MB reserved */
+		};
+
+		mhi_reserved_0: shared-dma-pool@0 {
+			compatible = "shared-dma-pool";
+			no-map;
+			size = <0x0 0x00900000>;
+			status = "okay";
+		};
+
+		mlo_global_mem_0: mlo_global_mem_0@0 {
+			no-map;
+			size = <0x0 0x1100000>; /* 17MB */
+		};
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		wps-button {
+			label = "WPS button";
+			linux,code = <KEY_WPS_BUTTON>;
+			gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+		};
+
+		reset-button {
+			label = "Reset button";
+			linux,code = <KEY_RESTART>;
+			gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	ethernet@f4300000 {
+		/delete-property/ rtl8221_reset-gpio;
+	};
+
+	rfover_power_reg: rfover_power_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "rfover_power";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	usb_power_reg: usb_power_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	wlan_power_reg: wlan_power_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "wlan_power";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	slic_power_reg: slic_power_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "slic_power";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	wlan_disable_reg: wlan_disable_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "wlan_disable";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	usb_power {
+		compatible = "regulator-output";
+		vout-supply = <&usb_power_reg>;
+	};
+
+	rfover_power {
+		compatible = "regulator-output";
+		vout-supply = <&rfover_power_reg>;
+	};
+
+	slic_power {
+		compatible = "regulator-output";
+		vout-supply = <&slic_power_reg>;
+	};
+
+	wlan_power {
+		compatible = "regulator-output";
+		vout-supply = <&wlan_power_reg>;
+	};
+
+	wlan_disable {
+		compatible = "regulator-output";
+		vout-supply = <&wlan_disable_reg>;
+	};
+};
+
+&i2c {
+	/delete-node/ i2c-switch@70;
+	/delete-node/ pgpio@73;
+};
+
+&pinctrl {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc_ctrl_default>;
+};
+
+&mmc_ctrl_default {
+	  data_signals {
+		  function = "gpio";
+	  };
+};
+
+&mmc0 {
+	status = "okay";
+	/delete-property/ mmc-hs200-1_8v;
+	sd-uhs-sdr50;
+};
+
+&pcie1 {
+	status = "okay";
+
+	linux,pci-domain = <0>;
+
+	pcie1_rp: pcie1_rp {
+		reg = <0 0 0 0 0>;
+		status = "okay";
+
+		wsi:wsi {
+			id = <0>;
+			num_chip = <1>;
+			chip_info = <0x0 0x0>;
+		};
+
+		mhi_0: qcom,mhi@0 {
+			reg = <0 0 0 0 0 >;
+			#address-cells = <0x2>;
+			#size-cells = <0x2>;
+			qti,disable-rddm-prealloc;
+			qti,rddm-seg-len = <0x1000>;
+			memory-region = <&qcn9200_reserved_0>, <&mhi_reserved_0>;
+			qrtr_instance_id = <0x30>;
+			qcom,board_id= <0x1010>; /*1st 2G and 2nd 5G*/
+			qcom,no-eeprom;
+			qcom,use-caldata-mac;
+			qcom,wsi_index = <0x0>;
+			qcom,wsi = <&wsi>;
+			qcom,nss_nodid = <0x30>;
+			pcie0_mhi: pcie0_mhi {
+				status = "okay";
+			};
+		};
+	};
+};
+
+&slic_spi0 {
+	reset-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+	cortina-access,isam-mode;
+	cortina-access,cs-word;
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&u2phy {
+	status = "okay";
+
+	u2port0-vbus-gpio = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+
+	u2portmask = <0x4>; /* USB2 port2 only */
+	u3portmask = <0>; /* no USB3 ports */
+};
+
+DISABLE_NODE(&usb3);
+DISABLE_NODE(&u3phy);
+
+DISABLE_NODE(&led0);
+DISABLE_NODE(&led1);
+DISABLE_NODE(&led2);
+DISABLE_NODE(&led3);
+DISABLE_NODE(&led4);
+DISABLE_NODE(&led5);
+DISABLE_NODE(&led6);
+DISABLE_NODE(&led7);
+DISABLE_NODE(&led8);
+DISABLE_NODE(&led9);
+
+
+#define SW_LED_CTRL(_name)              \
+_name {                                 \
+        hw-blink-rate1 = <100>;         \
+        hw-blink-rate2 = <500>;         \
+}
+
+#define SW_LED(_name, _label)           \
+_name {                                 \
+        label = _label;                 \
+        active-low;                     \
+        default-state = "off";          \
+        on,sw;                          \
+}
+
+#define SW_LED_BLINKING(_name, _label)  \
+_name {                                 \
+        label = _label;                 \
+        active-low;                     \
+        default-state = "on";           \
+        blink-rate1;                    \
+        blinking,sw;                    \
+        on,sw;                          \
+}
+
+SW_LED_CTRL(&led_ctrl);
+
+SW_LED(&led10, "phone:white");
+SW_LED(&led11, "phone:amber");
+SW_LED(&led12, "wifi:white");
+SW_LED(&led13, "wifi:amber");
+SW_LED_BLINKING(&led14, "internet:white");
+SW_LED(&led15, "internet:amber");
+

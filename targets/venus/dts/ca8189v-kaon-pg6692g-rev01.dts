@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * dts file for the Kaon PG6692G rev01 board
+ *
+ * Copyright (C) 2023 KAON Media Co Ltd
+ *
+ */
+
+#include "ca8189v-kaon-pg6692g-rev00.dts"
+
+/ {
+	model = "Kaon PG6692G rev01";
+	compatible = "kaon,pg6692g-rev01", "cortina,ca8189v", "cortina,venus";
+
+	gpio-keys {
+		wps-button {
+			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	mmc0_pwrseq: mmc-pwrseq {
+		compatible = "mmc-pwrseq-emmc";
+		reset-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&mmc0 {
+	mmc-pwrseq = <&mmc0_pwrseq>;
+};
+
+&led11 {
+	/delete-property/active-low;
+};
+
+&led13 {
+	/delete-property/active-low;
+};
+
+&led15 {
+	/delete-property/active-low;
+};
